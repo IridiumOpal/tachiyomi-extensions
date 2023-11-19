@@ -9,14 +9,15 @@ class MyMangaCMSGenerator : ThemeSourceGenerator {
 
     override val themeClass = "MyMangaCMS"
 
-    override val baseVersionCode: Int = 1
+    override val baseVersionCode: Int = 2
 
     override val sources = listOf(
         SingleLang(
             "TruyenTranhLH",
             "https://truyentranhlh.net",
             "vi",
-            overrideVersionCode = 9,
+            isNsfw = true,
+            overrideVersionCode = 10,
         ),
     )
 
