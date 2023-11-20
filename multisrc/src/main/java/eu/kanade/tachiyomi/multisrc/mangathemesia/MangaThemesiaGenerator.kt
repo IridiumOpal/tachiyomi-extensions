@@ -15,7 +15,7 @@ class MangaThemesiaGenerator : ThemeSourceGenerator {
 
     override val sources = listOf(
         MultiLang("Asura Scans", "https://asuratoon.com", listOf("en", "tr"), className = "AsuraScansFactory", pkgName = "asurascans", overrideVersionCode = 31),
-        MultiLang("Miau Scan", "https://miauscans.com", listOf("es", "pt-BR"), overrideVersionCode = 1),
+        MultiLang("Miau Scan", "https://miaucomics.org", listOf("es", "pt-BR"), overrideVersionCode = 2),
         SingleLang("Ainz Scans ID", "https://ainzscans.site", "id"),
         SingleLang("AiYuManga", "https://aiyumanhua.com", "es", overrideVersionCode = 8),
         SingleLang("Alceascan", "https://alceascan.my.id", "id"),
@@ -53,6 +53,7 @@ class MangaThemesiaGenerator : ThemeSourceGenerator {
         SingleLang("Komik Seru", "https://komikseru.me", "id", isNsfw = true),
         SingleLang("Kanzenin", "https://kanzenin.xyz", "id", isNsfw = true),
         SingleLang("Komiksan", "https://komiksan.link", "id", overrideVersionCode = 2),
+        SingleLang("King of Shojo", "https://kingofshojo.com", "ar"),
         SingleLang("Kiryuu", "https://kiryuu.id", "id", overrideVersionCode = 6),
         SingleLang("Komik AV", "https://komikav.com", "id", overrideVersionCode = 1),
         SingleLang("Komik Cast", "https://komikcast.ch", "id", overrideVersionCode = 24),
@@ -78,6 +79,7 @@ class MangaThemesiaGenerator : ThemeSourceGenerator {
         SingleLang("MangaKita", "https://mangakita.id", "id", overrideVersionCode = 2),
         SingleLang("Mangakyo", "https://mangakyo.org", "id", overrideVersionCode = 3),
         SingleLang("MangaShiina", "https://mangashiina.com", "es"),
+        SingleLang("MangaShiro", "https://mangashiro.me", "id"),
         SingleLang("Mangasusu", "https://mangasusuku.xyz/", "id", isNsfw = true, overrideVersionCode = 2),
         SingleLang("MangaTale", "https://mangatale.co", "id", overrideVersionCode = 1),
         SingleLang("MangaWT", "https://mangawt.com", "tr", overrideVersionCode = 5),
