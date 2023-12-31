@@ -248,9 +248,11 @@ abstract class MyMangaCMS(
     }
 
     private fun removeGenericWords(name: String): String {
-        return name.split(' ').filterNot { word ->
-            word.lowercase(Locale.US) in removeGenericWords
-        }.joinToString(" ")
+        val locale = Locale.forLanguageTag(lang)
+
+        return name.split(' ')
+            .filterNot { word -> word.lowercase(locale) in removeGenericWords }
+            .joinToString(" ")
     }
     //endregion
 
