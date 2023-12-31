@@ -99,23 +99,59 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
 
     override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
 
-    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val url = "$baseUrl/AdvanceSearch".toHttpUrl().newBuilder().apply {
-            addQueryParameter("comicName", query.trim())
-            addQueryParameter("page", page.toString())
-            for (filter in if (filters.isEmpty()) getFilterList() else filters) {
-                when (filter) {
-                    is Status -> addQueryParameter("status", arrayOf("", "Completed", "Ongoing")[filter.state])
-                    is GenreList -> {
-                        addQueryParameter("ig", filter.included.joinToString(","))
-                        addQueryParameter("eg", filter.excluded.joinToString(","))
-                    }
-                    else -> {}
-                }
-            }
-        }.build()
+    override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request { // publisher > writer > artist + sorting for both if else
+        if (query.isEmpty() && (if (filters.isEmpty()) getFilterList() else filters).filterIsInstance<GenreList>().all { it.included.isEmpty() && it.excluded.isEmpty() }) {
+            val url = baseUrl.toHttpUrl().newBuilder().apply {
+                var pathSegmentAdded = false
 
-        return GET(url, headers)
+                for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+                    when (filter) {
+                        is PublisherFilter -> {
+                            if (filter.state.isNotEmpty()) {
+                                addPathSegments("Publisher/${filter.state.replace(" ", "-")}")
+                                pathSegmentAdded = true
+                            }
+                        }
+                        is WriterFilter -> {
+                            if (filter.state.isNotEmpty()) {
+                                addPathSegments("Writer/${filter.state.replace(" ", "-")}")
+                                pathSegmentAdded = true
+                            }
+                        }
+                        is ArtistFilter -> {
+                            if (filter.state.isNotEmpty()) {
+                                addPathSegments("Artist/${filter.state.replace(" ", "-")}")
+                                pathSegmentAdded = true
+                            }
+                        }
+                        else -> {}
+                    }
+
+                    if (pathSegmentAdded) {
+                        break
+                    }
+                }
+                addPathSegment((if (filters.isEmpty()) getFilterList() else filters).filterIsInstance<SortFilter>().first().selected.toString())
+                addQueryParameter("page", page.toString())
+            }.build()
+            return GET(url, headers)
+        } else {
+            val url = "$baseUrl/AdvanceSearch".toHttpUrl().newBuilder().apply {
+                addQueryParameter("comicName", query.trim())
+                addQueryParameter("page", page.toString())
+                for (filter in if (filters.isEmpty()) getFilterList() else filters) {
+                    when (filter) {
+                        is Status -> addQueryParameter("status", arrayOf("", "Completed", "Ongoing")[filter.state])
+                        is GenreList -> {
+                            addQueryParameter("ig", filter.included.joinToString(","))
+                            addQueryParameter("eg", filter.excluded.joinToString(","))
+                        }
+                        else -> {}
+                    }
+                }
+            }.build()
+            return GET(url, headers)
+        }
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
@@ -175,7 +211,7 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     }
 
     override fun pageListRequest(chapter: SChapter): Request {
-        val qualitySuffix = if (qualitypref() != "lq") "&quality=${qualitypref()}" else ""
+        val qualitySuffix = if ((qualitypref() != "lq" && serverpref() != "s2") || (qualitypref() == "lq" && serverpref() == "s2")) "&s=${serverpref()}&quality=${qualitypref()}" else "&s=${serverpref()}"
         return GET(baseUrl + chapter.url + qualitySuffix, headers)
     }
 
@@ -203,10 +239,35 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
         val excluded: List<String>
             get() = state.filter { it.isExcluded() }.map { it.gid }
     }
+    open class SelectFilter(displayName: String, private val options: Array<Pair<String, String>>) : Filter.Select<String>(
+        displayName,
+        options.map { it.first }.toTypedArray(),
+    ) {
+        open val selected get() = options[state].second.takeUnless { it.isEmpty() }
+    }
+
+    private class PublisherFilter() : Filter.Text("Publisher")
+    private class WriterFilter() : Filter.Text("Writer")
+    private class ArtistFilter() : Filter.Text("Artist")
+    private class SortFilter : SelectFilter(
+        "Sort By",
+        arrayOf(
+            Pair("Alphabet", ""),
+            Pair("Popularity", "MostPopular"),
+            Pair("Latest Update", "LatestUpdate"),
+            Pair("New Comic", "Newest"),
+        ),
+    )
 
     override fun getFilterList() = FilterList(
         Status(),
         GenreList(getGenreList()),
+        Filter.Separator(),
+        Filter.Header("Filters below is ignored when Status,Genre or the queue is not empty."),
+        SortFilter(),
+        PublisherFilter(),
+        WriterFilter(),
+        ArtistFilter(),
     )
 
     // $("select[name=\"genres\"]").map((i,el) => `Genre("${$(el).next().text().trim()}", ${i})`).get().join(',\n')
@@ -280,9 +341,26 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
             }
         }
         screen.addPreference(qualitypref)
+        val serverpref = androidx.preference.ListPreference(screen.context).apply {
+            key = SERVER_PREF_TITLE
+            title = SERVER_PREF_TITLE
+            entries = arrayOf("Server 1", "Server 2")
+            entryValues = arrayOf("", "s2")
+            summary = "%s"
+
+            setOnPreferenceChangeListener { _, newValue ->
+                val selected = newValue as String
+                val index = this.findIndexOfValue(selected)
+                val entry = entryValues[index] as String
+                preferences.edit().putString(SERVER_PREF, entry).commit()
+            }
+        }
+        screen.addPreference(serverpref)
     }
 
     private fun qualitypref() = preferences.getString(QUALITY_PREF, "hq")
+
+    private fun serverpref() = preferences.getString(SERVER_PREF, "")
 
     private var rguardUrl: String? = null
 
@@ -325,6 +403,8 @@ class Readcomiconline : ConfigurableSource, ParsedHttpSource() {
     companion object {
         private const val QUALITY_PREF_Title = "Image Quality Selector"
         private const val QUALITY_PREF = "qualitypref"
+        private const val SERVER_PREF_TITLE = "Server Preference"
+        private const val SERVER_PREF = "serverpref"
 
         private val CHAPTER_IMAGES_REGEX = "lstImages\\.push\\([\"'](.*)[\"']\\)".toRegex()
         private val RGUARD_REGEX = Regex("""(function beau[\s\S]*\})""")

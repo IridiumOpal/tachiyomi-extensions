@@ -2,8 +2,9 @@ package eu.kanade.tachiyomi.extension.pt.lermanga
 
 import android.util.Base64
 import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.interceptor.rateLimit
+import eu.kanade.tachiyomi.network.interceptor.rateLimitHost
 import eu.kanade.tachiyomi.source.model.FilterList
+import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
@@ -14,12 +15,14 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.injectLazy
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.UnsupportedOperationException
 
 class LerManga : ParsedHttpSource() {
 
@@ -32,13 +35,19 @@ class LerManga : ParsedHttpSource() {
     override val supportsLatest = true
 
     override val client: OkHttpClient = network.cloudflareClient.newBuilder()
-        .rateLimit(1, 2, TimeUnit.SECONDS)
+        .rateLimitHost(baseUrl.toHttpUrl(), 1, 1, TimeUnit.SECONDS)
+        .rateLimitHost(IMG_CDN_URL.toHttpUrl(), 1, 2, TimeUnit.SECONDS)
         .build()
 
     private val json: Json by injectLazy()
 
     override fun headersBuilder(): Headers.Builder = Headers.Builder()
         .add("Referer", "$baseUrl/")
+
+    private fun apiHeadersBuilder(): Headers.Builder = headersBuilder()
+        .add("Accept", "application/json")
+
+    private val apiHeaders by lazy { apiHeadersBuilder().build() }
 
     override fun popularMangaRequest(page: Int): Request {
         val path = if (page > 1) "page/$page/" else ""
@@ -68,29 +77,65 @@ class LerManga : ParsedHttpSource() {
     override fun latestUpdatesNextPageSelector(): String? = null
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
-        val path = if (page > 1) "page/$page/" else ""
-        val url = "$baseUrl/$path".toHttpUrl().newBuilder()
-            .addQueryParameter("s", query)
+        if (query.startsWith(PREFIX_SLUG_SEARCH)) {
+            val slug = query.removePrefix(PREFIX_SLUG_SEARCH)
+            val tempManga = SManga.create().apply { url = "/mangas/$slug" }
+
+            return mangaDetailsRequest(tempManga)
+        }
+
+        val apiRequest = "$API_BASE_URL/mangas".toHttpUrl().newBuilder()
+            .addQueryParameter("page", page.toString())
+            .addQueryParameter("search", query)
+            .addQueryParameter("_fields", "title,slug")
             .build()
 
-        return GET(url, headers)
+        return GET(apiRequest, apiHeaders)
     }
 
-    override fun searchMangaSelector() = popularMangaSelector()
+    override fun searchMangaParse(response: Response): MangasPage {
+        if (response.request.url.queryParameter("slug") != null) {
+            val manga = mangaDetailsParse(response)
+            return MangasPage(listOf(manga), hasNextPage = false)
+        }
 
-    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+        val result = response.parseAs<List<LmMangaDto>>()
+        val mangaList = result.map(LmMangaDto::toSManga)
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+        val currentPage = response.request.url.queryParameter("page")
+            .orEmpty().toIntOrNull() ?: 1
+        val lastPage = response.headers["X-Wp-TotalPages"]!!.toInt()
+        val hasNextPage = currentPage < lastPage
 
-    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
-        val infoElement = document.selectFirst("div.capitulo_recente")!!
-
-        title = document.select("title").text().substringBeforeLast(" - ")
-        genre = infoElement.select("ul.genre-list li a")
-            .joinToString { it.text() }
-        description = infoElement.selectFirst("div.boxAnimeSobreLast p:last-child")!!.ownText()
-        thumbnail_url = infoElement.selectFirst("div.capaMangaInfo img")!!.absUrl("src")
+        return MangasPage(mangaList, hasNextPage)
     }
+
+    override fun searchMangaSelector() = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaFromElement(element: Element) = throw UnsupportedOperationException("Not used")
+
+    override fun searchMangaNextPageSelector() = throw UnsupportedOperationException("Not used")
+
+    override fun getMangaUrl(manga: SManga): String = baseUrl + manga.url
+
+    override fun mangaDetailsRequest(manga: SManga): Request {
+        val slug = manga.url.removePrefix("/mangas/").removeSuffix("/")
+
+        val apiRequest = "$API_BASE_URL/mangas".toHttpUrl().newBuilder()
+            .addQueryParameter("slug", slug)
+            .addQueryParameter("limit", "1")
+            .addQueryParameter("_embed", "wp:term")
+            .addQueryParameter("_fields", "title,slug,content,_links.wp:term,_embedded.wp:term")
+            .build()
+
+        return GET(apiRequest, apiHeaders)
+    }
+
+    override fun mangaDetailsParse(response: Response): SManga {
+        return response.parseAs<List<LmMangaDto>>().first().toSManga()
+    }
+
+    override fun mangaDetailsParse(document: Document): SManga = throw UnsupportedOperationException("Not used")
 
     override fun chapterListSelector() = "div.manga-chapters div.single-chapter"
 
@@ -132,6 +177,10 @@ class LerManga : ParsedHttpSource() {
         return GET(page.imageUrl!!, newHeaders)
     }
 
+    private inline fun <reified T> Response.parseAs(): T = use {
+        json.decodeFromString(it.body.string())
+    }
+
     private fun Element.srcAttr(): String = when {
         hasAttr("data-src") -> absUrl("data-src")
         else -> absUrl("src")
@@ -143,9 +192,14 @@ class LerManga : ParsedHttpSource() {
     }
 
     companion object {
+        const val API_BASE_URL = "https://lermanga.org/wp-json/wp/v2"
+        const val IMG_CDN_URL = "https://img.lermanga.org"
         private val PAGES_VARIABLE_REGEX = "var imagens_cap\\s*=\\s*".toRegex()
         private val DATE_FORMATTER by lazy {
             SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR"))
         }
+
+        const val PREFIX_SLUG_SEARCH = "slug:"
+        private const val ERROR_NO_SEARCH_AVAILABLE = "O site não possui busca própria."
     }
 }

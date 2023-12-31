@@ -32,7 +32,7 @@ jobs:
         uses: gradle/wrapper-validation-action@v1
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: adopt
@@ -79,7 +79,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: adopt
@@ -107,7 +107,7 @@ jobs:
           arguments: assembleRelease
 
       - name: Upload APKs (chunk ${{ matrix.chunk }})
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: "github.repository == 'tachiyomiorg/tachiyomi-extensions'"
         with:
           name: "multisrc-apks-${{ matrix.chunk }}"
@@ -128,7 +128,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: adopt
@@ -149,7 +149,7 @@ jobs:
           arguments: assembleRelease
 
       - name: Upload APKs (chunk ${{ matrix.chunk }})
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: "github.repository == 'tachiyomiorg/tachiyomi-extensions'"
         with:
           name: "individual-apks-${{ matrix.chunk }}"
@@ -168,12 +168,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download APK artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ~/apk-artifacts
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: adopt

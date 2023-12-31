@@ -10,6 +10,7 @@ Here is a list of known sources that were removed.
 
 ### Too difficult to maintain
 
+- Anchira https://github.com/tachiyomiorg/tachiyomi-extensions/pull/19149
 - Bakai https://github.com/tachiyomiorg/tachiyomi-extensions/pull/17890
 - Blackout Comics and Izakaya https://github.com/tachiyomiorg/tachiyomi-extensions/pull/18500
 - ColaManhua (COLA漫画) https://github.com/tachiyomiorg/tachiyomi-extensions/pull/11445
@@ -31,7 +32,7 @@ Here is a list of known sources that were removed.
 - ManhuaScan https://github.com/tachiyomiorg/tachiyomi-extensions/pull/7129
 - ManhwaHot https://github.com/tachiyomiorg/tachiyomi-extensions/pull/7129
 - Mode Scanlator https://github.com/tachiyomiorg/tachiyomi-extensions/pull/17865
-- Neox Scanlator https://github.com/tachiyomiorg/tachiyomi-extensions/pull/12695
+- Neox/Nexo Scanlator https://github.com/tachiyomiorg/tachiyomi-extensions/pull/12695
 - Reaper Scans (EN) https://github.com/tachiyomiorg/tachiyomi-extensions/pull/16819
 - SuperMangás and SuperHentais https://github.com/tachiyomiorg/tachiyomi-extensions/pull/6348
 - TopToon+/Day Comics https://github.com/tachiyomiorg/tachiyomi-extensions/pull/10851
@@ -56,6 +57,7 @@ Here is a list of known sources that were removed.
 - Mangawow https://github.com/tachiyomiorg/tachiyomi-extensions/issues/5367
 - MHScans https://github.com/tachiyomiorg/tachiyomi-extensions/issues/15319
 - Mono Manga https://github.com/tachiyomiorg/tachiyomi-extensions/issues/17634
+- Moon Daisy Scans https://github.com/tachiyomiorg/tachiyomi-extensions/issues/17929
 - NarTag https://github.com/tachiyomiorg/tachiyomi-extensions/issues/8038
 - Plot-twistnf-scans https://github.com/tachiyomiorg/tachiyomi-extensions/issues/4242
 - Realm Scans https://github.com/tachiyomiorg/tachiyomi-extensions/issues/15586

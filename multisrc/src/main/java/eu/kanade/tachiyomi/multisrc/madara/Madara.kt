@@ -516,12 +516,14 @@ abstract class Madara(
                 manga.thumbnail_url = imageFromElement(it)
             }
             select(mangaDetailsSelectorStatus).last()?.let {
-                manga.status = when (it.text()) {
-                    in completedStatusList -> SManga.COMPLETED
-                    in ongoingStatusList -> SManga.ONGOING
-                    in hiatusStatusList -> SManga.ON_HIATUS
-                    in canceledStatusList -> SManga.CANCELLED
-                    else -> SManga.UNKNOWN
+                manga.status = with(it.text()) {
+                    when {
+                        containsIn(completedStatusList) -> SManga.COMPLETED
+                        containsIn(ongoingStatusList) -> SManga.ONGOING
+                        containsIn(hiatusStatusList) -> SManga.ON_HIATUS
+                        containsIn(canceledStatusList) -> SManga.CANCELLED
+                        else -> SManga.UNKNOWN
+                    }
                 }
             }
             val genres = select(mangaDetailsSelectorGenre)
@@ -605,6 +607,10 @@ abstract class Madara(
         return this.contains(updatingRegex).not()
     }
 
+    fun String.containsIn(array: Array<String>): Boolean {
+        return this.lowercase() in array.map { it.lowercase() }
+    }
+
     protected open fun imageFromElement(element: Element): String? {
         return when {
             element.hasAttr("data-src") -> element.attr("abs:data-src")
@@ -637,7 +643,6 @@ abstract class Madara(
         val xhrHeaders = headersBuilder()
             .add("Content-Length", form.contentLength().toString())
             .add("Content-Type", form.contentType().toString())
-            .add("Referer", "$baseUrl/")
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 
@@ -646,7 +651,6 @@ abstract class Madara(
 
     protected open fun xhrChaptersRequest(mangaUrl: String): Request {
         val xhrHeaders = headersBuilder()
-            .add("Referer", "$baseUrl/")
             .add("X-Requested-With", "XMLHttpRequest")
             .build()
 

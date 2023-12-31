@@ -45,7 +45,7 @@ data class SeriesDto(
     val pages: Int,
     val coverImageLocked: Boolean = true,
     val pagesRead: Int,
-    val userRating: Int,
+    val userRating: Float,
     val userReview: String? = "",
     val format: Int,
     val created: String? = "",
@@ -62,7 +62,7 @@ data class SeriesMetadataDto(
     val genres: List<Genres> = emptyList(),
     val seriesId: Int,
     val ageRating: Int,
-
+    val publicationStatus: Int,
 )
 
 @Serializable

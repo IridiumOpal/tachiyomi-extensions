@@ -106,14 +106,16 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
         return manga
     }
 
-    private val extensionRegex = Regex("""\.(jpg|png|jpeg)""")
+    private val extensionRegex = Regex("""\.(jpg|png|jpeg|webp)""")
 
-    private fun getImage(element: Element): String {
-        return when {
+    private fun getImage(element: Element): String? {
+        val url = when {
             element.attr("data-src").contains(extensionRegex) -> element.attr("abs:data-src")
             element.attr("src").contains(extensionRegex) -> element.attr("abs:src")
             else -> element.attr("abs:data-lazy-src")
         }
+
+        return if (URLUtil.isValidUrl(url)) url else null
     }
 
     // removes resizing
@@ -151,7 +153,7 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
             val scanlatedBy = document.select(".entry-terms:has(a[href*=group])").firstOrNull()
                 ?.select("a[href*=group]")?.joinToString(prefix = "Scanlated by: ") { it.text() }
             val extendedDescription = document.select(".entry-content p:not(p:containsOwn(|)):not(.chapter-class + p)").joinToString("\n") { it.text() }
-            description = listOfNotNull(basicDescription, scanlatedBy, extendedDescription).joinToString("\n")
+            description = listOfNotNull(basicDescription, scanlatedBy, extendedDescription).joinToString("\n").trim()
             status = when (document.select("a[href*=status]").first()?.text()) {
                 "Ongoing" -> SManga.ONGOING
                 "Completed" -> SManga.COMPLETED
@@ -217,8 +219,8 @@ open class MyReadingManga(override val lang: String, private val siteLang: Strin
     // Pages
 
     override fun pageListParse(document: Document): List<Page> {
-        return (document.select("div > img") + document.select("div.separator img[data-src]"))
-            .map { getImage(it) }
+        return (document.select("div img") + document.select("div.separator img[data-src]"))
+            .mapNotNull { getImage(it) }
             .distinct()
             .mapIndexed { i, url -> Page(i, "", url) }
     }

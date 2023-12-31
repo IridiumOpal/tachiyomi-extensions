@@ -7,11 +7,14 @@ import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.jsoup.nodes.Element
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
-class Shinigami : Madara("Shinigami", "https://shinigami.sh", "id") {
+class Shinigami : Madara("Shinigami", "https://shinigami.moe", "id") {
     // moved from Reaper Scans (id) to Shinigami (id)
     override val id = 3411809758861089969
+
+    override val useNewChapterEndpoint = false
+
+    override fun searchPage(page: Int): String = if (page == 1) "" else "page/$page/"
 
     override val client: OkHttpClient = super.client.newBuilder()
         .rateLimit(4, 1, TimeUnit.SECONDS)
@@ -22,18 +25,6 @@ class Shinigami : Madara("Shinigami", "https://shinigami.sh", "id") {
         .add("Sec-Fetch-Mode", "navigate")
         .add("Sec-Fetch-Site", "same-origin")
         .add("Upgrade-Insecure-Requests", "1")
-        .add("X-Requested-With", randomString)
-
-    private fun generateRandomString(length: Int): String {
-        val charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.abcdefghijklmnopqrstuvwxyz.0123456789"
-        return (1..length)
-            .map { charset.random() }
-            .joinToString("")
-    }
-
-    private val randomLength = Random.Default.nextInt(13, 21)
-
-    private val randomString = generateRandomString(randomLength)
 
     override val mangaSubString = "semua-series"
 

@@ -1,3 +1,21 @@
+## 1.3.13
+
+### Fixed
+
+ * Fixed 'null cannot be cast to non-null type' exception
+
+## 1.3.12
+
+### Features
+
+* Migrate filters to v2
+* Implemented smartFilters
+* Added localization support
+
+### Fixed
+
+* Fixed publication status not showing
+
 ## 1.3.10
 
 ### Features
