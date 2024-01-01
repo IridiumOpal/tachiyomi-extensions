@@ -18,7 +18,7 @@ class MyMangaCMSGenerator : ThemeSourceGenerator {
             "https://truyentranhlh.net",
             "vi",
             isNsfw = true,
-            overrideVersionCode = 10,
+            overrideVersionCode = 9,
         ),
         SingleLang(
             "Manhwa18",
